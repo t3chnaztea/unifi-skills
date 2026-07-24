@@ -1,0 +1,22 @@
+{
+  "name": "unifi",
+  "version": "1.0.0",
+  "description": "Agent skills for administering a UniFi network over its local API: API-key auth and the endpoint map, the zone-based firewall, Wi-Fi channel planning, client and switch-port operations, and the site inventory file. Distilled from running a real multi-VLAN UniFi network with coding agents.",
+  "author": {
+    "name": "tech nasty"
+  },
+  "homepage": "https://github.com/t3chnaztea/unifi-skills",
+  "repository": "https://github.com/t3chnaztea/unifi-skills",
+  "license": "MIT",
+  "keywords": [
+    "unifi",
+    "ubiquiti",
+    "udm-pro",
+    "networking",
+    "firewall",
+    "vlan",
+    "wifi",
+    "home-lab",
+    "agent-skills"
+  ]
+}

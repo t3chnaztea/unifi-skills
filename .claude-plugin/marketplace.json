@@ -1,0 +1,26 @@
+{
+  "name": "t3chnaztea-unifi",
+  "description": "Agent skills and tools for home-lab networking and tinkering.",
+  "owner": {
+    "name": "tech nasty"
+  },
+  "plugins": [
+    {
+      "name": "unifi",
+      "source": "./",
+      "description": "Agent skills for administering a UniFi network over its local API.",
+      "category": "networking",
+      "tags": [
+        "unifi",
+        "ubiquiti",
+        "udm-pro",
+        "networking",
+        "firewall",
+        "vlan",
+        "wifi",
+        "home-lab",
+        "agent-skills"
+      ]
+    }
+  ]
+}

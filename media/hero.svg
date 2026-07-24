@@ -1,0 +1,161 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1680" height="560" viewBox="0 0 1680 560">
+  <defs>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="softglow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="1680" height="560" fill="#050505"/>
+
+  <!-- circuit traces, left edge -->
+  <g stroke="#00c8e0" stroke-width="2" fill="none" opacity="0.5">
+    <path d="M0 96 H44 L72 124 H120"/>
+    <path d="M0 168 H62 L86 192 H132"/>
+    <path d="M0 470 H70 L96 444 H150"/>
+    <path d="M0 508 H108 L134 482 H196"/>
+  </g>
+  <g fill="#00c8e0" opacity="0.7">
+    <circle cx="124" cy="124" r="4"/>
+    <circle cx="136" cy="192" r="4"/>
+    <circle cx="154" cy="444" r="4"/>
+  </g>
+
+  <!-- circuit traces, bottom centre -->
+  <g stroke="#ff2e97" stroke-width="2" fill="none" opacity="0.45">
+    <path d="M472 520 H560 L588 492 H700"/>
+    <path d="M1010 526 H1104 L1130 500 H1214"/>
+  </g>
+  <g fill="#ff2e97" opacity="0.6">
+    <circle cx="468" cy="520" r="4"/>
+    <circle cx="1218" cy="500" r="4"/>
+  </g>
+
+  <!-- ===== left illustration: gateway + zones ===== -->
+  <g filter="url(#glow)">
+    <!-- gateway chassis -->
+    <rect x="118" y="258" width="300" height="92" rx="10" fill="none" stroke="#00d9ff" stroke-width="4"/>
+    <!-- faceplate divider -->
+    <line x1="118" y1="288" x2="418" y2="288" stroke="#00d9ff" stroke-width="2" opacity="0.55"/>
+    <!-- rack ears -->
+    <path d="M118 274 H100 V334 H118" fill="none" stroke="#00d9ff" stroke-width="3"/>
+    <path d="M418 274 H436 V334 H418" fill="none" stroke="#00d9ff" stroke-width="3"/>
+    <!-- display panel -->
+    <rect x="134" y="298" width="52" height="40" rx="5" fill="none" stroke="#00d9ff" stroke-width="2.5" opacity="0.85"/>
+  </g>
+  <!-- port row -->
+  <g>
+    <rect x="204" y="302" width="20" height="16" rx="2" fill="none" stroke="#00d9ff" stroke-width="2" opacity="0.75"/>
+    <rect x="232" y="302" width="20" height="16" rx="2" fill="none" stroke="#00d9ff" stroke-width="2" opacity="0.75"/>
+    <rect x="260" y="302" width="20" height="16" rx="2" fill="none" stroke="#00d9ff" stroke-width="2" opacity="0.75"/>
+    <rect x="288" y="302" width="20" height="16" rx="2" fill="none" stroke="#00d9ff" stroke-width="2" opacity="0.75"/>
+    <rect x="316" y="302" width="20" height="16" rx="2" fill="none" stroke="#00d9ff" stroke-width="2" opacity="0.75"/>
+    <rect x="344" y="302" width="20" height="16" rx="2" fill="none" stroke="#00d9ff" stroke-width="2" opacity="0.75"/>
+  </g>
+  <!-- link LEDs -->
+  <g filter="url(#softglow)">
+    <circle cx="214" cy="330" r="3.5" fill="#ffcc00"/>
+    <circle cx="242" cy="330" r="3.5" fill="#ffcc00"/>
+    <circle cx="270" cy="330" r="3.5" fill="#00ff9c"/>
+    <circle cx="298" cy="330" r="3.5" fill="#00ff9c"/>
+    <circle cx="326" cy="330" r="3.5" fill="#ff2e97"/>
+    <circle cx="354" cy="330" r="3.5" fill="#333333"/>
+    <circle cx="392" cy="304" r="4" fill="#00d9ff"/>
+  </g>
+
+  <!-- uplink from gateway to zone nodes -->
+  <g stroke="#00d9ff" stroke-width="2.5" fill="none" opacity="0.7">
+    <path d="M268 258 V226 H176 V196"/>
+    <path d="M268 258 V226 H268 V200"/>
+    <path d="M268 258 V226 H362 V196"/>
+  </g>
+
+  <!-- zone node: wifi -->
+  <g filter="url(#glow)">
+    <circle cx="176" cy="152" r="44" fill="none" stroke="#ffcc00" stroke-width="3.5"/>
+    <path d="M154 158 a30 30 0 0 1 44 0" fill="none" stroke="#ffcc00" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M163 170 a16 16 0 0 1 26 0" fill="none" stroke="#ffcc00" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="176" cy="180" r="4" fill="#ffcc00"/>
+  </g>
+
+  <!-- zone node: firewall shield -->
+  <g filter="url(#glow)">
+    <circle cx="268" cy="156" r="44" fill="none" stroke="#ff2e97" stroke-width="3.5"/>
+    <path d="M268 134 l20 8 v14 c0 14 -9 24 -20 28 c-11 -4 -20 -14 -20 -28 v-14 z" fill="none" stroke="#ff2e97" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M259 156 l6 7 l12 -13" fill="none" stroke="#ff2e97" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- zone node: camera -->
+  <g filter="url(#glow)">
+    <circle cx="362" cy="152" r="44" fill="none" stroke="#00d9ff" stroke-width="3.5"/>
+    <rect x="342" y="140" width="34" height="22" rx="4" fill="none" stroke="#00d9ff" stroke-width="3"/>
+    <path d="M376 146 l12 -7 v20 l-12 -7 z" fill="none" stroke="#00d9ff" stroke-width="3" stroke-linejoin="round"/>
+    <line x1="352" y1="162" x2="352" y2="174" stroke="#00d9ff" stroke-width="3" stroke-linecap="round"/>
+    <line x1="340" y1="174" x2="364" y2="174" stroke="#00d9ff" stroke-width="3" stroke-linecap="round"/>
+  </g>
+
+  <!-- vlan tag pips under gateway -->
+  <g stroke="#ff2e97" stroke-width="2.5" fill="none" opacity="0.75">
+    <path d="M200 350 V392 H164"/>
+    <path d="M268 350 V404"/>
+    <path d="M336 350 V392 H372"/>
+  </g>
+  <g fill="#ff2e97" opacity="0.9" filter="url(#softglow)">
+    <circle cx="160" cy="392" r="4.5"/>
+    <circle cx="268" cy="408" r="4.5"/>
+    <circle cx="376" cy="392" r="4.5"/>
+  </g>
+
+  <!-- ===== centre wordmark ===== -->
+  <g filter="url(#glow)">
+    <text x="836" y="286" text-anchor="middle"
+          font-family="Menlo, DejaVu Sans Mono, monospace" font-size="104" font-weight="700"
+          fill="#22e0ff" letter-spacing="1">unifi-skills</text>
+  </g>
+  <text x="852" y="366" text-anchor="middle"
+        font-family="Menlo, DejaVu Sans Mono, monospace" font-size="30" font-weight="500"
+        fill="#ff2e97" letter-spacing="1" filter="url(#softglow)">agent skills for administering a real network</text>
+
+  <!-- ===== right illustration: terminal ===== -->
+  <g filter="url(#glow)">
+    <rect x="1352" y="204" width="238" height="182" rx="12" fill="none" stroke="#00d9ff" stroke-width="4"/>
+    <line x1="1352" y1="246" x2="1590" y2="246" stroke="#00d9ff" stroke-width="3"/>
+  </g>
+  <g filter="url(#softglow)">
+    <circle cx="1378" cy="225" r="7" fill="#ff2e97"/>
+    <circle cx="1402" cy="225" r="7" fill="#ffcc00"/>
+    <circle cx="1426" cy="225" r="7" fill="#22e0ff"/>
+  </g>
+  <g filter="url(#softglow)">
+    <path d="M1380 282 l22 18 l-22 18" fill="none" stroke="#22e0ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="1414" y1="320" x2="1444" y2="320" stroke="#ff2e97" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- circuit traces, right edge -->
+  <g stroke="#00c8e0" stroke-width="2" fill="none" opacity="0.5">
+    <path d="M1680 118 H1636 L1610 144 H1566"/>
+    <path d="M1680 452 H1624 L1598 426 H1536"/>
+  </g>
+  <g stroke="#ff2e97" stroke-width="2" fill="none" opacity="0.45">
+    <path d="M1471 386 V434 H1560 L1586 460 H1680"/>
+    <path d="M1471 386 V434 H1400 L1374 460 H1300"/>
+  </g>
+  <g fill="#00c8e0" opacity="0.7">
+    <circle cx="1562" cy="144" r="4"/>
+    <circle cx="1532" cy="426" r="4"/>
+  </g>
+  <g fill="#ff2e97" opacity="0.6">
+    <circle cx="1296" cy="460" r="4"/>
+  </g>
+</svg>
