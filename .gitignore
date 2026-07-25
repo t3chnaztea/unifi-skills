@@ -1,4 +1,10 @@
 __pycache__/
 *.pyc
 .env
+
+# Your site map from the unifi-context-map skill. Never commit it: assembled in
+# one file it is a burglary aid (camera placements, every MAC in the building,
+# your WAN address, which SSID is the trusted one).
+# Name it with a .local.md suffix, or add its literal name here.
 *.local.md
+network-map.md
