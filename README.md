@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <b>Years of running a real multi-VLAN UniFi network with coding agents, distilled into agent skills.</b>
+  <b>Point a coding agent at a real multi-VLAN UniFi network without finding every trap yourself, at midnight, from the wrong side of a firewall rule.</b>
 </p>
 
 > UniFi has a complete local API and almost no public documentation for it. It also has three overlapping API surfaces with different auth rules, endpoints that move between point releases without deprecation notices, and a habit of accepting configuration it does not actually apply. Point a coding agent at it without doctrine and you get changes that read back clean and did nothing, or a firewall zone that silently cuts your house off from its own DNS. This repo packages the doctrine as [Agent Skills](https://agentskills.io): focused, model-readable guides your coding agent loads on demand when you ask it to work on your network.
