@@ -1,7 +1,7 @@
 {
   "name": "unifi",
   "version": "1.0.0",
-  "description": "Agent skills for administering a UniFi network over its local API: API-key auth and the endpoint map, the zone-based firewall, Wi-Fi channel planning, client and switch-port operations, and the site inventory file. Distilled from running a real multi-VLAN UniFi network with coding agents.",
+  "description": "Agent skills for administering a UniFi network over its local API: API-key auth and the endpoint map, the zone-based firewall, Wi-Fi channel planning, client and switch-port operations, and the site inventory file. Verified against UniFi OS 5.1.19 / Network 10.4.57, and written for the traps: config the controller accepts and never applies.",
   "author": {
     "name": "tech nasty"
   },
