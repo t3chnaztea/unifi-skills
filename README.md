@@ -64,7 +64,7 @@ map, and its read-before-write doctrine.
 The `udm.py` helper here is derived from
 [**dlewis7444/unifi-claude-skill**](https://github.com/dlewis7444/unifi-claude-skill)
 (MIT), trimmed and reorganized. Credit where it is due: that repo is the origin
-of the script and worth a look if a CLI wrapper is all you need.
+of the script, and it is the better choice if a CLI wrapper is all you need.
 
 The split is roughly: **upstream gives your agent the API. This gives it the
 playbook and the traps.** Five skills of operational doctrine, most of it
@@ -168,14 +168,13 @@ parameterized, **no real inventory of any kind**, state the controller version
 you verified against, and show the reader how to confirm the change rather than
 just make it. PRs welcome.
 
-## Companion repos
+## More tiny tools for home labs
 
-- [home-assistant-skills](https://github.com/t3chnaztea/home-assistant-skills):
-  the same idea for Home Assistant, and the structural template for this repo.
-- [batocera-skills](https://github.com/t3chnaztea/batocera-skills): the same idea
-  for a Batocera retro-gaming cabinet.
-- [awesome-psn-skills](https://github.com/t3chnaztea/awesome-psn-skills): the
-  same idea for reading a PlayStation play-history export.
+Agent skills: [home-assistant](https://github.com/t3chnaztea/home-assistant-skills) · [batocera](https://github.com/t3chnaztea/batocera-skills) · [psn](https://github.com/t3chnaztea/awesome-psn-skills)  
+Retro cabinet: [batocera-toolbox](https://github.com/t3chnaztea/batocera-toolbox) · [batocera-holidays](https://github.com/t3chnaztea/batocera-holidays)  
+Home server: [dell-ipmi-fan-control](https://github.com/t3chnaztea/dell-ipmi-fan-control) · [plex-preroll-roulette](https://github.com/t3chnaztea/plex-preroll-roulette)  
+PlayStation: [awesome-psnstats](https://github.com/t3chnaztea/awesome-psnstats)  
+Desktop: [fastfetch-macos-gradient-hud](https://github.com/t3chnaztea/fastfetch-macos-gradient-hud)
 
 ## Versions
 
