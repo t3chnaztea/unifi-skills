@@ -231,6 +231,28 @@ In zsh, note that `"$UDM ..."` does not word-split. Use a function:
 udm() { python3 /path/to/udm.py "$@"; }
 ```
 
+### Two brakes, because this script can take your network down
+
+`block`, `kick`, `restart`, `power-cycle` and `raw PUT` are all one typo away from
+cutting off the thing you are typing on. Both brakes are enforced inside the single
+request function, so `raw` gets them too:
+
+```bash
+python3 udm.py devices restart <mac> --dry-run   # prints the request, sends nothing
+export UNIFI_READONLY=1                          # refuses every write outright
+```
+
+`--dry-run` prints the method, URL and body it *would* have sent. `UNIFI_READONLY`
+(also readable from the env file) hard-fails instead. Set it for anything
+exploratory, an unattended agent, or a controller you do not own.
+
+**Writes are classified by HTTP method, not by command name.** Anything that is not
+a GET counts as a write unless its call site explicitly opts out, so a mutation
+cannot sneak in later by riding along on a new subcommand. Only the v2 system-log
+queries opt out, because they are POST-based reads. `events` keeps working under
+`UNIFI_READONLY=1`, and that is the one case worth knowing about if you add a
+POST-based read of your own.
+
 ## Read before write, always
 
 Every skill here assumes it, so it belongs in the foundation:

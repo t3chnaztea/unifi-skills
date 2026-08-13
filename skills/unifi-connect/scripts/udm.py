@@ -15,9 +15,15 @@ Config:
   UNIFI_API_KEY   API key, or put it in the env file
   UNIFI_ENV_FILE  path to env file, default ~/.config/unifi/env
   UNIFI_SITE      site name, default "default"
+  UNIFI_READONLY  set to 1/true/yes to refuse every write, no exceptions
 
-Usage: python3 udm.py <command> [args] [--json]
+Usage: python3 udm.py <command> [args] [--json] [--dry-run]
 Run with no args for the command list.
+
+Writes are classified by HTTP method, not by command name, so a mutation
+cannot slip through by being added to a new command later. Anything that is
+not a GET counts as a write unless its call site explicitly says otherwise
+(only the v2 system-log queries do, which are POST-based reads).
 """
 
 import json
@@ -77,7 +83,23 @@ def protect_base() -> str:
     return f"https://{host()}/proxy/protect/integration/v1"
 
 
-def req(method: str, url: str, body=None):
+def readonly() -> bool:
+    return str(env_value("UNIFI_READONLY") or "").strip().lower() in ("1", "true", "yes", "on")
+
+
+DRY_RUN = False
+
+
+def req(method: str, url: str, body=None, write=None):
+    # Fail closed: unless a call site states otherwise, anything but GET is a write.
+    if write is None:
+        write = method.upper() != "GET"
+    if write:
+        if readonly():
+            sys.exit(f"refused: UNIFI_READONLY is set, {method} {url} is a write")
+        if DRY_RUN:
+            out({"dry_run": True, "method": method.upper(), "url": url, "body": body}, False)
+            return {"dry_run": True, "sent": False}
     data = json.dumps(body).encode() if body is not None else None
     headers = {
         "X-API-Key": api_key(),
@@ -191,7 +213,7 @@ def events(a):
     entries = []
     for n in range(pages):
         entries += req("POST", f"{v2()}/system-log/all",
-                       {"pageSize": 100, "pageNumber": n})
+                       {"pageSize": 100, "pageNumber": n}, write=False)
     return entries
 
 
@@ -222,11 +244,17 @@ def raw(a):
 
 
 def main():
-    args = [x for x in sys.argv[1:] if x != "--json"]
+    global DRY_RUN
+    flags = ("--json", "--dry-run")
+    args = [x for x in sys.argv[1:] if x not in flags]
     compact = "--json" in sys.argv
+    DRY_RUN = "--dry-run" in sys.argv
     if not args or args[0] not in COMMANDS:
         for name, (_, h) in COMMANDS.items():
             print(f"  {name:12} {h}")
+        print("\n  --dry-run     print writes instead of sending them")
+        print("  --json        compact output")
+        print("  UNIFI_READONLY=1 in the env refuses every write outright")
         sys.exit(0 if not args else f"unknown command: {args[0]}")
     fn, _ = COMMANDS[args[0]]
     out(fn(args[1:]), compact)
