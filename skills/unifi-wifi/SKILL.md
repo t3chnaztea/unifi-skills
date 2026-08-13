@@ -170,8 +170,43 @@ for d in json.load(sys.stdin):
 ```
 
 **Prefer 52-64, 100-112, and 132-144 when you need free blocks.** The 116-128
-block overlaps terminal doppler weather radar in the US, where a CAC can run ten
-minutes instead of one, and the channels are sometimes unavailable outright.
+block overlaps terminal doppler weather radar (TDWR, 5600-5650 MHz) in the US,
+where a CAC can run ten minutes instead of one, and the channels are sometimes
+unavailable outright. An 80 MHz block anchored at 116 spans 116/120/124/128 =
+5570-5650 MHz, so it swallows the whole TDWR sub-band: at 80 MHz you cannot
+sit near 116 without sitting *in* it.
+
+### If an AP keeps falling off a DFS channel, stop restarting it
+
+An AP assigned a DFS channel can run there for a week or two, hit a radar
+detection (real or false), quietly move to a non-DFS channel, and **keep reporting
+the assigned channel in its config the whole time**. Nothing alarms, nothing logs
+it, and `rest/device` echoes back whatever you last wrote. One deployment sat like
+this for **twelve days**: config said 116, the radio was on 149, stacked on top of
+two APs already sharing the 149-161 block, at 33% and 30% channel utilization
+while every other AP sat at 1-2%. Every check had read the config.
+
+Restarting puts it back and buys another week or two, which is treating the
+symptom. If a radio keeps getting pushed off the same block, the block is wrong
+for that site. **Retire it and take an extra co-channel share instead.** Moving
+that AP to a non-DFS block took it from 33% to 7% utilization and its neighbour
+from 21% to 12%. A share you chose beats a channel the AP cannot hold, so pair
+whichever APs are furthest apart physically: different floors beats different
+rooms.
+
+**Audit live-vs-config, not either one alone,** on a schedule rather than only
+after a write. A radio that drifts once will drift again.
+
+```bash
+udm devices --json | python3 -c '
+import json,sys
+for d in json.load(sys.stdin):
+    cfg={r["radio"]:r for r in d.get("radio_table") or []}
+    for s in d.get("radio_table_stats") or []:
+        c=cfg.get(s["radio"],{}).get("channel")
+        if s.get("channel") and str(c)!=str(s["channel"]) and c!="auto":
+            print("DRIFT", d.get("name"), s["radio"], "cfg", c, "live", s["channel"])'
+```
 
 The tradeoff is real and worth stating honestly: DFS channels require radar
 detection, cost a ~50-60 second silent scan when a radio moves onto one, and some
@@ -222,6 +257,14 @@ radio goes silent for it. Two moves observed on Network 10.4.57 took roughly **4
 and 105 seconds**, so budget more than a minute and do not conclude the write
 failed at the 60-second mark. Clients drop and reconnect once. Do it when nobody
 is on a call.
+
+**The two directions are not equally hard.** Moving *off* a DFS channel onto a
+non-DFS one is easy: one observed move settled about **75 seconds** after a
+force-provision, no restart, clients reassociating on their own. Moving *onto* a
+DFS channel is where it sticks, and a force-provision can leave the radio on its
+old channel indefinitely; an AP restart (`cmd/devmgr` `restart`, ~2.5 minutes
+offline) is what finally lands it after CAC. If a *non*-DFS move needs a restart,
+something else is wrong. Go look rather than power-cycling.
 
 **Verify from `radio_table_stats`, never the PUT echo**, and read `state` rather
 than just `channel`:
