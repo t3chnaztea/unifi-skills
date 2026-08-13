@@ -146,6 +146,31 @@ for u in json.load(sys.stdin):
     print(u.get("name") or u.get("hostname"), u.get("fixed_ip"), u.get("mac"))'
 ```
 
+**And "active" is not reality either.** A wired client listed by `stat/sta` means
+the switch port has link and the controller has an ARP entry for it. That is layer
+2. It is not a statement that the host is up, and the controller will keep
+reporting a dead server as an active client indefinitely.
+
+Seen on a NAS that was halfway through a reboot: it appeared in `udm clients` with
+its correct IP and a healthy-looking uptime, ARP resolved from another machine on
+the LAN, and every single TCP port was closed. Diagnosing "the controller says it
+is online" as "the box is fine" wasted the first ten minutes.
+
+The tell is in the traffic counters, because a live host is never at a flat zero:
+
+```bash
+udm clients --json | python3 -c '
+import json,sys
+for c in json.load(sys.stdin):
+    if c.get("is_wired") and not (c.get("wired-tx_bytes-r") or c.get("wired-rx_bytes-r")):
+        print("no traffic:", c.get("name") or c.get("hostname"), c.get("ip"))'
+```
+
+Anything that shows up there is a candidate, not a verdict: an idle printer looks
+identical. Confirm from off the controller entirely: probe a port the host should
+be answering on. The controller can tell you a cable is plugged in. It cannot tell
+you a service is running, and it will not say so.
+
 ## Device operations
 
 ```bash
