@@ -7,8 +7,9 @@ description: >-
   "how do I get a UniFi API key", "SSH is closed on my UDM", "connect to
   UniFi", "talk to my UniFi controller". Covers minting an API key over the
   API, which endpoint families accept a key, the cookie-session fallback, the
-  HTTP/2 empty-body trap, and the endpoint map. Start here: the other skills
-  assume this one. Not for firewall policy (unifi-firewall), Wi-Fi and radios
+  HTTP/2 empty-body trap, the endpoint map, and the safety doctrine: dry-run,
+  read-only mode, snapshot-before-mutate rollback, and the audit trail. Start
+  here: the other skills assume this one. Not for firewall policy (unifi-firewall), Wi-Fi and radios
   (unifi-wifi), client and port operations (unifi-clients).
 compatibility: >-
   UniFi OS gateways running a self-hosted Network controller. Verified on
@@ -252,6 +253,52 @@ cannot sneak in later by riding along on a new subcommand. Only the v2 system-lo
 queries opt out, because they are POST-based reads. `events` keeps working under
 `UNIFI_READONLY=1`, and that is the one case worth knowing about if you add a
 POST-based read of your own.
+
+## Snapshot before you mutate, because the controller has no undo
+
+Dry-run tells you what you are about to do. It does not give you a way back once
+you have done it. The way back is the object you are about to replace, saved
+before the write:
+
+```bash
+mkdir -p ~/udm-snapshots
+curl -sk -H "X-API-Key: $UNIFI_API_KEY" \
+  "https://<UDM_HOST>/proxy/network/api/s/default/rest/user/<id>" \
+  | tee ~/udm-snapshots/$(date +%Y%m%dT%H%M%S)-user-<id>.json
+```
+
+Rollback is then the same full-object PUT you were already doing, with the
+snapshot as the body. This works precisely *because* of the full-object PUT
+discipline: the snapshot is the complete prior state, not a diff.
+
+Three things this cannot roll back, so know them before you need them:
+
+- **`cmd/*` actions.** A restart, kick, or power-cycle is an event, not state.
+  There is nothing to PUT back.
+- **Deletes.** Re-creating a deleted object gets a new `_id`, and anything that
+  referenced the old id (a policy, a reservation) still points at the corpse.
+  Snapshot the referrers too before deleting anything they name.
+- **Cascades.** Deleting a network can take its DHCP scope and zone membership
+  with it. The snapshot of the network object alone does not capture what the
+  controller cleaned up around it.
+
+## Keep an audit trail
+
+One append-only line per mutating call: when, what, and which snapshot escapes
+it. Cheap enough that there is no excuse:
+
+```bash
+echo "$(date -u +%FT%TZ) PUT rest/user/<id> pre=20260822T141530-user-<id>.json reason=fix-vlan" \
+  >> ~/udm-snapshots/audit.log
+```
+
+This pairs with minting the agent its own named key: the controller tells you
+*which identity* wrote a policy, the audit log tells you *why*, and the snapshot
+gives you the way back. When something appears on the network that nobody admits
+to, those three answer it in under a minute. The MCP crowd builds this into the
+server ([mcp-unifi](https://github.com/pete-builds/mcp-unifi) logs every call as
+JSONL with secrets scrubbed, a design worth copying); with plain curl you write
+the line yourself.
 
 ## Read before write, always
 

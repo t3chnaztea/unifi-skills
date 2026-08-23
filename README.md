@@ -70,6 +70,24 @@ The split is roughly: **upstream gives your agent the API. This gives it the
 playbook and the traps.** Five skills of operational doctrine, most of it
 learned by getting it wrong first on a live network.
 
+## The MCP servers, and why this is not one
+
+There are now real MCP servers for UniFi:
+[**sirkirby/unifi-mcp**](https://github.com/sirkirby/unifi-mcp) is the mature
+incumbent, and [**pete-builds/mcp-unifi**](https://github.com/pete-builds/mcp-unifi)
+is the safety-first one, with dry-run previews, a JSONL audit log, and composite
+rollback built into the server. If you want typed tools your agent can call,
+use one of them. They are good.
+
+The same split applies: **an MCP server gives your agent the API. This gives it
+the playbook.** A tool called `update_firewall_policy` will happily execute the
+wrong policy perfectly. Nothing in a tool schema tells the agent that a new zone
+defaults to BLOCK against Internal in both directions, that a partial PUT resets
+every other port on the switch, or that the controller echoes back config it
+never applied. That judgment is what these skills carry, and it is
+transport-neutral: it makes the agent better over raw curl, over `udm.py`, and
+over an MCP server's tools alike. Run both. They compose.
+
 ---
 
 ## ⚠️ Read before you install
@@ -89,8 +107,12 @@ write does not throw an error, it removes your ability to fix the error.
 - **Know your out-of-band path before the first firewall change.** On most UniFi
   OS gateways SSH is closed by default, so "I'd just SSH in" is often not a plan.
 - **The doctrine is conservative by design:** read before write, full-object PUT,
-  verify from a fresh read rather than the write's own echo, stage allow policies
+  verify from a fresh read rather than the write's own echo, dry-run first,
+  snapshot before every mutate so there is a way back, stage allow policies
   before restrictive ones. It is still your network and your risk.
+- **Keep the key out of the agent's context entirely.**
+  [docs/secrets-hygiene.md](docs/secrets-hygiene.md) is the short version of how:
+  the agent gets the capability, never the credential.
 
 ---
 
