@@ -98,8 +98,8 @@ def req(method: str, url: str, body=None, write=None):
         if readonly():
             sys.exit(f"refused: UNIFI_READONLY is set, {method} {url} is a write")
         if DRY_RUN:
-            out({"dry_run": True, "method": method.upper(), "url": url, "body": body}, False)
-            return {"dry_run": True, "sent": False}
+            # Returned, not printed: main() emits it as the single output document.
+            return {"dry_run": True, "sent": False, "method": method.upper(), "url": url, "body": body}
     data = json.dumps(body).encode() if body is not None else None
     headers = {
         "X-API-Key": api_key(),
@@ -212,8 +212,13 @@ def events(a):
     pages = int(a[1]) if a and a[0] == "--pages" else 1
     entries = []
     for n in range(pages):
-        entries += req("POST", f"{v2()}/system-log/all",
-                       {"pageSize": 100, "pageNumber": n}, write=False)
+        page = req("POST", f"{v2()}/system-log/all",
+                   {"pageSize": 100, "pageNumber": n}, write=False)
+        # req() unwraps a {"data": [...]} envelope; anything else is a shape we don't know.
+        if not isinstance(page, list):
+            shape = sorted(page) if isinstance(page, dict) else type(page).__name__
+            sys.exit(f"events: unexpected system-log response on page {n}: {shape}")
+        entries += page
     return entries
 
 
