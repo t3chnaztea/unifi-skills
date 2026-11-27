@@ -12,7 +12,8 @@ description: >-
   (unifi-wifi).
 compatibility: >-
   UniFi Network with adopted devices. Verified on UniFi OS 5.1.19 / Network
-  10.4.57. Port and DHCP object shapes are version-sensitive.
+  10.4.57; reads reconfirmed on Network 11.0.83 (IDs are now UUIDs, alarms
+  moved to the system log). Port and DHCP object shapes are version-sensitive.
 ---
 
 # UniFi Clients and Devices
@@ -37,10 +38,17 @@ consequences scale with the object:
 - `rest/device` `port_overrides`: **PUT the complete `port_overrides` list.**
   Sending one port's override resets every other port on the switch to defaults.
   On a 24-port switch carrying a segmented network, that is the whole afternoon.
+  **On Network 11, `GET rest/device` 404s**, so the "GET it first" step can't be
+  done there: take the current `port_overrides` from the switch's `stat/device`
+  entry, save the whole entry as the snapshot, and treat `PUT rest/device/<UUID>`
+  as unverified on 11. Afterwards diff **every** port's override against the
+  snapshot, not just the port you changed.
 
 ```bash
-# Correct shape, every time
-udm raw GET /proxy/network/api/s/default/rest/networkconf/<NETWORK_ID> > /tmp/net.json
+# Correct shape, every time. udm unwraps the legacy envelope to a ONE-ELEMENT LIST,
+# so take element 0: the PUT body must be the bare object, never a list or envelope.
+udm raw GET /proxy/network/api/s/default/rest/networkconf/<NETWORK_ID> --json \
+  | python3 -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps(d[0] if isinstance(d,list) else d))' > /tmp/net.json
 # edit /tmp/net.json, changing only what you mean to change
 udm raw PUT /proxy/network/api/s/default/rest/networkconf/<NETWORK_ID> "$(cat /tmp/net.json)"
 ```
@@ -217,10 +225,15 @@ udm events --pages 5    # page back further
 ```
 
 ```bash
-udm alarms                        # unresolved
-udm alarms archive <ALARM_ID>
-udm alarms archive-all
+udm alarms                        # critical, device and client alerts, newest first
+udm alarms --new                  # only status NEW
 ```
+
+**From Network 10 on, `rest/alarm` returns 400 and there is no alarm archive
+over the API.** Alarms became system-log categories: POST `system-log/critical`,
+`system-log/device-alert`, `system-log/client-alert`, each with the same pagination
+body as `events`. Entries carry `status` (`NEW`, `STALED`) and `severity`. Dismiss
+them in the UI. (Updated 2026-10-22, Network 11.0.83.)
 
 Alarms are worth reading before any change session: an existing alarm about an
 adoption failure or a switch uplink explains symptoms you would otherwise blame

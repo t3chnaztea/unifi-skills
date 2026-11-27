@@ -206,7 +206,10 @@ Desktop: [fastfetch-macos-gradient-hud](https://github.com/t3chnaztea/fastfetch-
 ## Versions
 
 Verified against **UniFi OS 5.1.19 / Network 10.4.57**, mid-2026, on a UDM Pro
-with AC and WiFi 6 access points and UniFi switching. Channel and DFS specifics
+with AC and WiFi 6 access points and UniFi switching.
+Reconfirmed on **UniFi OS 6.0.10 / Network 11.0.83** (October 2026): Network 11
+turns every object ID into a UUID and moves alarms into the v2 system log; see
+`unifi-connect`'s Version drift section. Channel and DFS specifics
 assume the **US regulatory domain**.
 
 UniFi moves faster than its documentation. Between releases seen here:
