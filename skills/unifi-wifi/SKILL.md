@@ -16,6 +16,7 @@ description: >-
 compatibility: >-
   UniFi Network with adopted UniFi APs. Channel and DFS specifics below are US
   regulatory domain. Verified on Network 10.4.57 with AC and WiFi 6 hardware.
+  On Network 11, GET rest/device 404s and the radio write is unverified.
 ---
 
 # UniFi Wi-Fi
@@ -181,7 +182,8 @@ sit near 116 without sitting *in* it.
 An AP assigned a DFS channel can run there for a week or two, hit a radar
 detection (real or false), quietly move to a non-DFS channel, and **keep reporting
 the assigned channel in its config the whole time**. Nothing alarms, nothing logs
-it, and `rest/device` echoes back whatever you last wrote. One deployment sat like
+it, and the device config echoes back whatever you last wrote (`rest/device` on
+Network 10; on 11, where `GET rest/device` 404s, the config fields in `stat/device`). One deployment sat like
 this for **twelve days**: config said 116, the radio was on 149, stacked on top of
 two APs already sharing the 149-161 block, at 33% and 30% channel utilization
 while every other AP sat at 1-2%. Every check had read the config.
@@ -228,6 +230,18 @@ device id appended, exactly like `rest/firewallrule` in `unifi-firewall`. It is
 not broken and your key is fine: reads live on `stat/device`. An agent that GETs
 `rest/device`, sees `[]`, and concludes the controller has no devices is on the
 wrong endpoint.
+
+**2026-10-22, Network 11.0.83:** `GET rest/device` and `GET rest/device/<id>` now
+return **404 `api.err.NotFound`** instead of an empty list, and device `_id`s are
+UUIDs (Network 11 moved to PostgreSQL). Reads still work on `stat/device`. **The
+`PUT rest/device/<DEVICE_UUID>` write below has not been re-tested on 11.** Before
+the first PUT on 11, save the AP's whole `stat/device` entry as the snapshot (it is
+also the only rollback source now). Make the smallest real change you were going to
+make anyway, then diff a fresh `stat/device` read against the snapshot across the
+whole config: both radios' channel, width and tx_power, `port_overrides`, name and
+management settings, plus the AP's actual channel. A rewritten backend may no longer
+merge a `radio_table`-only PUT, and that shows up in fields a channel check never
+looks at. Don't trust the PUT response. If the PUT 404s, the write path has moved.
 
 The write body that works is the radio table alone, sent complete:
 

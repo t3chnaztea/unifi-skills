@@ -13,8 +13,11 @@ description: >-
   (unifi-wifi), client and port operations (unifi-clients).
 compatibility: >-
   UniFi OS gateways running a self-hosted Network controller. Verified on
-  UniFi OS 5.1.19 / Network 10.4.57. Endpoint paths and auth behavior are
-  version-sensitive; confirm against your own controller.
+  UniFi OS 5.1.19 / Network 10.4.57; reconfirmed unchanged on UniFi OS
+  5.1.27 / Network 10.5.67 (2026-08-14) and on UniFi OS 6.0.10 / Network
+  11.0.83 (2026-10-22; object IDs became UUIDs, alarms moved to the system
+  log). Endpoint paths and auth behavior are version-sensitive; confirm
+  against your own controller.
 ---
 
 # UniFi Connect
@@ -98,7 +101,7 @@ perfectly for twenty calls and then 401s is not a broken key:
 | Network, legacy | `/proxy/network/api/s/default/...` | yes |
 | Network, v2 | `/proxy/network/v2/api/site/default/...` | yes |
 | Protect, integration API | `/proxy/protect/integration/v1/...` | yes |
-| **Protect, legacy API** | `/proxy/protect/api/...` | **no, 401** |
+| **Protect, legacy API** | `/proxy/protect/api/...` | **no, 401** (`bootstrap` may return 500 on OS 6.x) |
 | UniFi OS system | `/api/system` | yes |
 
 The legacy Protect API (`bootstrap`, `events`, the older `cameras` endpoint) is
@@ -168,11 +171,12 @@ that doc predates the change.
 | GET | `rest/user` | Known clients, including fixed-IP reservations |
 | GET | `rest/portforward` | Port forwarding rules |
 | GET | `rest/routing` | Static routes |
-| GET | `rest/alarm` | Unresolved alarms |
+| GET | `rest/alarm` | Alarms, **dead from Network 10 (400)**; use v2 `system-log/<category>` |
 | GET | `stat/sitedpi?type=by_app` | DPI traffic breakdown |
 | POST | `cmd/stamgr` | Client ops: block, unblock, kick, forget |
 | POST | `cmd/devmgr` | Device ops: restart, provision, power-cycle, speedtest |
-| POST | `cmd/evtmgr` | Alarm archiving |
+| POST | `cmd/evtmgr` | Alarm archiving (went with `rest/alarm`) |
+| GET | `rest/firewallgroup` | IP address and port groups |
 
 `rest/firewallrule` still exists and, on a zone-based-firewall controller,
 **returns an empty list**. That does not mean you have no firewall. See
@@ -185,6 +189,18 @@ that doc predates the change.
 | GET | `firewall-policies` | Zone-based firewall policies |
 | GET | `firewall/zone` | Firewall zones, **singular**, `zones` 404s |
 | POST | `system-log/all` | System log, body `{"pageSize":100,"pageNumber":0}` |
+| POST | `system-log/critical` | Critical alerts (same body; bare array) |
+| POST | `system-log/device-alert` | Device alerts: offline, unreachable (same body) |
+| POST | `system-log/client-alert` | Client alerts (same body) |
+| POST | `system-log/admin-activity` | Who changed what (same body) |
+| GET | `network-members-groups` | Device (MAC) groups used as policy sources |
+| GET | `device` | All UniFi devices, grouped by application (`network_devices`, ...) |
+
+### Official integration API, `https://<UDM_HOST>/proxy/network/integration/v1/`
+
+Accepts the API key on Network 11. `GET sites` returns the site list with its
+UUID; `GET sites/<SITE_UUID>/devices` returns a clean device list with
+firmware, state and features. Paginated (`offset`, `limit`, `totalCount`).
 
 Legacy `stat/event` **404s** on Network 10.4. Events live at the v2 system-log
 endpoint now, and it is a POST with a pagination body, not a GET.
@@ -221,7 +237,7 @@ python3 udm.py clients --json  # compact output for piping
 Commands: `status`, `clients` (+ `--all` / `block` / `unblock` / `kick`),
 `devices` (+ `restart` / `provision` / `power-cycle <switch-mac> <port>`),
 `networks`, `wlans`, `policies`, `zones`, `portforward`, `reservations`,
-`events`, `alarms`, `dpi`, `protect`, `raw <METHOD> <path> ['<json>']`.
+`events`, `alarms` (+ `--new`), `dpi`, `protect`, `raw <METHOD> <path> ['<json>']`.
 
 `raw` is the escape hatch: any path on the gateway, any method, so you are never
 blocked waiting for the script to grow a subcommand.
@@ -262,13 +278,15 @@ before the write:
 
 ```bash
 mkdir -p ~/udm-snapshots
-curl -sk -H "X-API-Key: $UNIFI_API_KEY" \
-  "https://<UDM_HOST>/proxy/network/api/s/default/rest/user/<id>" \
+udm raw GET /proxy/network/api/s/default/rest/user/<id> --json \
+  | python3 -c 'import json,sys; d=json.load(sys.stdin); print(json.dumps(d[0] if isinstance(d,list) else d))' \
   | tee ~/udm-snapshots/$(date +%Y%m%dT%H%M%S)-user-<id>.json
 ```
 
-Rollback is then the same full-object PUT you were already doing, with the
-snapshot as the body. This works precisely *because* of the full-object PUT
+Save the **bare object**. A raw curl of a legacy endpoint returns the envelope
+`{"meta":{...},"data":[{...}]}`, and `udm` unwraps it to a one-element list;
+neither is a valid PUT body. Rollback is then the same full-object PUT you were
+already doing, with the saved object as the body. This works precisely *because* of the full-object PUT
 discipline: the snapshot is the complete prior state, not a diff.
 
 Three things this cannot roll back, so know them before you need them:
@@ -315,7 +333,61 @@ Every skill here assumes it, so it belongs in the foundation:
 
 ## Version drift
 
-Everything here was verified on **UniFi OS 5.1.19 / Network 10.4.57** in mid-2026.
+Everything here was verified on **UniFi OS 5.1.19 / Network 10.4.57** in mid-2026,
+and reconfirmed with no changes needed on **UniFi OS 5.1.27 / Network 10.5.67**
+on 2026-08-14 — every endpoint in this map (`stat/sysinfo`, `stat/device`,
+`stat/sta`, `stat/alluser`, `rest/networkconf`, `rest/wlanconf`, `rest/user`,
+`rest/portforward`, `firewall-policies`, `firewall/zone`, `trafficroutes`)
+returned expected data with no path or auth changes across that jump.
+**2026-10-02, UniFi OS 6.0.10 / Network 10.6.106 / Protect 7.2:**
+- Reconfirmed with an API key: `stat/sysinfo`, `stat/device`, the v2 `system-log/all` POST (returns a bare JSON array, 500 per page) and the Protect integration endpoints.
+- Storage health is **not exposed to an API key**:
+  - `stat/device` → `storage` lists only the eMMC (`/persistent`) and `/tmp`;
+  - `/api/system` no longer carries storage, firmware or OS-version fields;
+  - `/proxy/ucore/api/*` serves the web UI HTML;
+  - the Protect integration `nvrs` object has no storage block.
+- For HDD/RAID status, use the UI (UniFi OS → Settings → Storage / Protect → Storage) or the legacy Protect `bootstrap` (cookie session).
+- The firmware timeline is in the system log: `FIRMWARE_UPDATED_V2`, with the device and `VERSION` in `parameters`.
+- **2026-10-04, full reconfirmation on the same versions** (switch and AP firmware current at the time). With an API key, all of these returned expected data with no path changes:
+  - legacy: `stat/sysinfo`, `stat/health`, `stat/device`, `stat/sta`, `stat/alluser`, `rest/networkconf`, `rest/wlanconf`, `rest/user`, `rest/portforward`, `rest/routing`, `rest/firewallrule` (still empty on zone-based firewall), `stat/sitedpi`;
+  - v2: `firewall-policies`, `firewall/zone`, `trafficroutes`, `system-log/all`;
+  - UniFi OS / Protect: `/api/system`, Protect integration `cameras`, `/proxy/users/api/v2/user/self/keys`.
+- `rest/alarm` still returns 400 `api.err.InvalidObject`.
+- **The legacy Protect `bootstrap` with an API key now returns HTTP 500, not 401.** Legacy `cameras` still returns 401. Both mean the same thing (legacy Protect needs a cookie session); a 500 here is not a gateway fault.
+- **`udm status`** still works. The OS version is now only in `stat/sysinfo` → `udm_version` (e.g. `UDM<model>.<arch>.v6.0.10…`), not in `/api/system`.
+
+**2026-10-22, UniFi OS 6.0.10 / Network 11.0.83, full reconfirmation.** Network 11
+moved the controller database to PostgreSQL. With an API key:
+- **Every object ID is now a UUID** (`xxxxxxxx-xxxx-xxxx-...`), not a 24-character
+  hex ObjectId. Devices, networks, policies, routes, clients: all of them. Any ID
+  you wrote down before the upgrade is gone. Look objects up again by name or MAC
+  before a PUT or DELETE; never reuse a pre-11 ID from notes.
+- Unchanged and working: `stat/sysinfo`, `stat/health`, `stat/device`, `stat/sta`,
+  `stat/alluser`, `stat/sitedpi`, `rest/networkconf`, `rest/wlanconf`, `rest/user`,
+  `rest/usergroup`, `rest/portforward`, `rest/routing`, `rest/setting`,
+  `rest/firewallrule` (still empty), v2 `firewall-policies`, `firewall/zone`,
+  `trafficroutes`, `trafficrules`, `/api/system`, the key list, Protect integration
+  `cameras`. Firewall policy create works (including `action: REJECT`).
+- **`GET rest/device` now 404s** (`api.err.NotFound`), with or without an ID. It
+  used to return an empty list. Read devices from `stat/device` or v2 `device`.
+  Whether `PUT rest/device/<UUID>` still writes was not tested; see `unifi-wifi`.
+- **Alarms are system-log categories now.** `rest/alarm` returns 400 and
+  `stat/alarm` 404. Use POST `system-log/critical`, `device-alert` and
+  `client-alert`; each entry has `status` (`NEW`, `STALED`) and `severity`.
+  `udm alarms` reads every page of all three (warning on stderr past 2,000 per category). There is no API archive; dismiss in the UI.
+  Other categories that answer: `all`, `admin-activity`. These 404: `devices`,
+  `clients`, `updates`, `vpn`, `firewall`, `threats`.
+- **`system-log/all` returns an envelope again**, `{data, page_number,
+  total_element_count, total_page_count}`, not a bare array. `critical` still
+  returns a bare array. Handle both.
+- Legacy Protect `bootstrap` still 500s with a key; legacy `cameras` still 401s.
+- Network 11's new Routing Policies, external-URL Network Lists and SD-WAN
+  policies have no endpoint found yet (`routing-policies`, `network-lists`,
+  `sdwan` all 404). Existing Traffic Routes still live at `trafficroutes`.
+
+**2026-11-27, Network 11.1.58:** reads reconfirmed with an API key: `stat/sysinfo`,
+`stat/health`, `rest/user`, `system-log/all` and the three alert categories.
+
 Ubiquiti moves endpoints between versions with no deprecation notice: `stat/event`
 died, `/api/users` died, the whole firewall model changed, and the HTTP/2 behavior
 shifted inside a point release. Treat this map as a strong prior, not gospel.

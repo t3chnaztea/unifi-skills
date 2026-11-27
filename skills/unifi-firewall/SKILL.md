@@ -12,7 +12,8 @@ description: >-
   mapping (unifi-wifi).
 compatibility: >-
   UniFi Network 9.x and later, where the zone-based firewall replaced classic
-  rule groups. Verified on Network 10.4.57. On older controllers the legacy
+  rule groups. Verified on Network 10.4.57; policy create reconfirmed on
+  Network 11.0.83 (policy IDs are now UUIDs). On older controllers the legacy
   rest/firewallrule model still applies and this skill does not.
 ---
 
@@ -129,6 +130,21 @@ The schema is undocumented and version-specific; a policy the controller wrote
 itself is the most reliable template you will find.
 
 **v2 PUTs may return HTTP 201 instead of 200. That is success.** Do not retry.
+
+**`action` takes `ALLOW`, `BLOCK` or `REJECT`.** `BLOCK` drops silently; `REJECT`
+answers (ICMP port-unreachable for UDP), so the client gives up at once instead of
+waiting for a timeout. Use `REJECT` when you want software to fall back, the classic
+case being QUIC: a dropped UDP 443 leaves browsers and apps retrying QUIC before
+they fall back to TCP, which reads as "the internet is slow". For that, match
+`protocol: "udp"` with destination `port: "443"` rather than the QUIC DPI app:
+an app match only fires after DPI has classified the flow, so the first packets
+get through and the rejection arrives late. **Scope it**: UDP 443 is not only
+QUIC. A blanket rule also breaks DTLS VPNs (Cisco AnyConnect, GlobalProtect),
+OpenVPN on UDP 443 and some WebRTC/TURN calls, so limit it by source zone or device
+group, or exclude known VPN endpoints. Test it from a client: connecting a UDP socket
+sends nothing, so connect, **send a datagram**, then receive; the receive (or the next
+send) should fail with "connection refused" within milliseconds. A bare connect()
+succeeding proves nothing. (Verified 2026-10-22, Network 11.0.83.)
 
 **Verify from a fresh GET, never from the PUT response.** Re-read the policy list
 and confirm the rule is present, enabled, in the position you expect, and in the
